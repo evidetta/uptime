@@ -1,0 +1,26 @@
+version: "3.9"
+services:
+  postgres:
+    image: postgres:latest
+    ports:
+      - 5432:5432
+    environment:
+      - POSTGRES_PASSWORD=password
+      - POSTGRES_DB=db
+    volumes:
+      - ./postgres/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+      - ../../build/data.csv:/csv:ro
+    depends_on:
+      etl:
+          condition: service_completed_successfully
+  etl:
+    build:
+      dockerfile: ../../src/etl/Dockerfile.etl
+    command:
+      - -c 
+      - "python3 /build/etl.py > /build/data.csv"
+    volumes:
+      - ../../build:/build:rw
+      - /var/log:/var/log:rw
+    healthcheck:
+      test: ["CMD", "exit", "0"]
